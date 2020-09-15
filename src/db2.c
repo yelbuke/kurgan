@@ -49,7 +49,7 @@ int		social_count;
 /* snarf a socials file */
 void load_socials( FILE *fp)
 {
-    for ( ; ; ) 
+    for ( ; ; )
     {
     	struct social_type social;
     	char *temp;
@@ -58,7 +58,7 @@ void load_socials( FILE *fp)
 	social.others_no_arg = NULL;
 	social.char_found = NULL;
 	social.others_found = NULL;
-	social.vict_found = NULL; 
+	social.vict_found = NULL;
 	social.char_not_found = NULL;
 	social.char_auto = NULL;
 	social.others_auto = NULL;
@@ -66,8 +66,8 @@ void load_socials( FILE *fp)
     	temp = fread_word(fp);
     	if (!strcmp(temp,"#0"))
 	    return;  /* done */
-#if defined(social_debug) 
-	else 
+#if defined(social_debug)
+	else
 	    fprintf(stderr,"%s\n\r",temp);
 #endif
 
@@ -81,7 +81,11 @@ void load_socials( FILE *fp)
 	{
 	     social_table[social_count] = social;
 	     social_count++;
-	     continue; 
+       if (db_run == 1)
+       {
+       mysql_write_social( social.name, social.char_no_arg, social.others_no_arg, social.char_found, social.others_found, social.vict_found, social.char_not_found, social.char_auto, social.others_auto );
+     }
+       continue;
 	}
         else
 	    social.char_no_arg = temp;
@@ -93,6 +97,10 @@ void load_socials( FILE *fp)
         {
 	     social_table[social_count] = social;
              social_count++;
+             if (db_run == 1)
+             {
+             mysql_write_social( social.name, social.char_no_arg, social.others_no_arg, social.char_found, social.others_found, social.vict_found, social.char_not_found, social.char_auto, social.others_auto );
+           }
              continue;
         }
         else
@@ -105,6 +113,10 @@ void load_socials( FILE *fp)
         {
 	     social_table[social_count] = social;
              social_count++;
+             if (db_run == 1)
+             {
+             mysql_write_social( social.name, social.char_no_arg, social.others_no_arg, social.char_found, social.others_found, social.vict_found, social.char_not_found, social.char_auto, social.others_auto );
+           }
              continue;
         }
        	else
@@ -117,10 +129,14 @@ void load_socials( FILE *fp)
         {
 	     social_table[social_count] = social;
              social_count++;
+             if (db_run == 1)
+             {
+             mysql_write_social( social.name, social.char_no_arg, social.others_no_arg, social.char_found, social.others_found, social.vict_found, social.char_not_found, social.char_auto, social.others_auto );
+           }
              continue;
         }
         else
-	    social.others_found = temp; 
+	    social.others_found = temp;
 
         temp = fread_string_eol(fp);
         if (!strcmp(temp,"$"))
@@ -129,6 +145,10 @@ void load_socials( FILE *fp)
         {
 	     social_table[social_count] = social;
              social_count++;
+             if (db_run == 1)
+             {
+             mysql_write_social( social.name, social.char_no_arg, social.others_no_arg, social.char_found, social.others_found, social.vict_found, social.char_not_found, social.char_auto, social.others_auto );
+           }
              continue;
         }
         else
@@ -141,6 +161,10 @@ void load_socials( FILE *fp)
         {
 	     social_table[social_count] = social;
              social_count++;
+             if (db_run == 1)
+             {
+             mysql_write_social( social.name, social.char_no_arg, social.others_no_arg, social.char_found, social.others_found, social.vict_found, social.char_not_found, social.char_auto, social.others_auto );
+           }
              continue;
         }
         else
@@ -153,11 +177,15 @@ void load_socials( FILE *fp)
         {
 	     social_table[social_count] = social;
              social_count++;
+             if (db_run == 1)
+             {
+             mysql_write_social( social.name, social.char_no_arg, social.others_no_arg, social.char_found, social.others_found, social.vict_found, social.char_not_found, social.char_auto, social.others_auto );
+           }
              continue;
         }
         else
 	    social.char_auto = temp;
-         
+
         temp = fread_string_eol(fp);
         if (!strcmp(temp,"$"))
              social.others_auto = NULL;
@@ -165,17 +193,24 @@ void load_socials( FILE *fp)
         {
              social_table[social_count] = social;
              social_count++;
+             if (db_run == 1)
+             {
+             mysql_write_social( social.name, social.char_no_arg, social.others_no_arg, social.char_found, social.others_found, social.vict_found, social.char_not_found, social.char_auto, social.others_auto );
+           }
              continue;
         }
         else
-	    social.others_auto = temp; 
-	
-	social_table[social_count] = social;
+	    social.others_auto = temp;
+      if (db_run == 1)
+      {
+	mysql_write_social( social.name, social.char_no_arg, social.others_no_arg, social.char_found, social.others_found, social.vict_found, social.char_not_found, social.char_auto, social.others_auto );
+}
+  social_table[social_count] = social;
     	social_count++;
    }
    return;
 }
-    
+
 
 
 
@@ -187,24 +222,30 @@ void load_socials( FILE *fp)
 void load_mobiles( FILE *fp )
 {
     MOB_INDEX_DATA *pMobIndex;
- 
+
+    if ( area_last == NULL )
+    {
+    	bug( "Load_mobiles: no #AREA seen yet.", 0 );
+    	exit( 1 );
+    }
+
     for ( ; ; )
     {
         sh_int vnum;
         char letter;
         int iHash;
- 
+
         letter                          = fread_letter( fp );
         if ( letter != '#' )
         {
             bug( "Load_mobiles: # not found.", 0 );
             exit( 1 );
         }
- 
+
         vnum                            = fread_number( fp );
         if ( vnum == 0 )
             break;
- 
+
         fBootDb = FALSE;
         if ( get_mob_index( vnum ) != NULL )
         {
@@ -212,7 +253,7 @@ void load_mobiles( FILE *fp )
             exit( 1 );
         }
         fBootDb = TRUE;
- 
+
         pMobIndex                       = (MOB_INDEX_DATA *)alloc_perm( sizeof(*pMobIndex) );
         pMobIndex->vnum                 = vnum;
 	pMobIndex->new_format		= TRUE;
@@ -222,10 +263,10 @@ void load_mobiles( FILE *fp )
         pMobIndex->long_descr           = fread_string( fp );
         pMobIndex->description          = fread_string( fp );
 	pMobIndex->race		 	= race_lookup(fread_string( fp ));
- 
+
         pMobIndex->long_descr[0]        = UPPER(pMobIndex->long_descr[0]);
         pMobIndex->description[0]       = UPPER(pMobIndex->description[0]);
- 
+
         pMobIndex->act                  = fread_flag( fp ) | ACT_IS_NPC
 					| race_table[pMobIndex->race].act;
         pMobIndex->affected_by          = fread_flag( fp )
@@ -235,14 +276,14 @@ void load_mobiles( FILE *fp )
         pMobIndex->group                = fread_number( fp );
 
         pMobIndex->level                = fread_number( fp );
-        pMobIndex->hitroll              = fread_number( fp );  
+        pMobIndex->hitroll              = fread_number( fp );
 
 	/* read hit dice */
-        pMobIndex->hit[DICE_NUMBER]     = fread_number( fp );  
-        /* 'd'          */                fread_letter( fp ); 
+        pMobIndex->hit[DICE_NUMBER]     = fread_number( fp );
+        /* 'd'          */                fread_letter( fp );
         pMobIndex->hit[DICE_TYPE]   	= fread_number( fp );
-        /* '+'          */                fread_letter( fp );   
-        pMobIndex->hit[DICE_BONUS]      = fread_number( fp ); 
+        /* '+'          */                fread_letter( fp );
+        pMobIndex->hit[DICE_BONUS]      = fread_number( fp );
 
  	/* read mana dice */
 	pMobIndex->mana[DICE_NUMBER]	= fread_number( fp );
@@ -266,7 +307,7 @@ void load_mobiles( FILE *fp )
 	pMobIndex->ac[AC_EXOTIC]	= fread_number( fp ) * 10;
 
 	/* read flags and add in data from the race table */
-	pMobIndex->off_flags		= fread_flag( fp ) 
+	pMobIndex->off_flags		= fread_flag( fp )
 					| race_table[pMobIndex->race].off;
 	pMobIndex->imm_flags		= fread_flag( fp )
 					| race_table[pMobIndex->race].imm;
@@ -289,7 +330,7 @@ void load_mobiles( FILE *fp )
 	/* size */
 	pMobIndex->size			= size_lookup(fread_word(fp));
 	pMobIndex->material		= str_dup(fread_word( fp ));
- 
+
 	for ( ; ; )
         {
             letter = fread_letter( fp );
@@ -330,14 +371,17 @@ void load_mobiles( FILE *fp )
 		break;
 	     }
 	}
-
+        if (db_run == 1)
+        {
+        mysql_write_mobile( pMobIndex , area_last );
+      }
         iHash                   = vnum % MAX_KEY_HASH;
         pMobIndex->next         = mob_index_hash[iHash];
         mob_index_hash[iHash]   = pMobIndex;
         top_mob_index++;
         kill_table[URANGE(0, pMobIndex->level, MAX_LEVEL-1)].number++;
     }
- 
+
     return;
 }
 
@@ -347,24 +391,30 @@ void load_mobiles( FILE *fp )
 void load_objects( FILE *fp )
 {
     OBJ_INDEX_DATA *pObjIndex;
- 
+
+    if ( area_last == NULL )
+    {
+    	bug( "Load_objects: no #AREA seen yet.", 0 );
+    	exit( 1 );
+    }
+
     for ( ; ; )
     {
         sh_int vnum;
         char letter;
         int iHash;
- 
+
         letter                          = fread_letter( fp );
         if ( letter != '#' )
         {
             bug( "Load_objects: # not found.", 0 );
             exit( 1 );
         }
- 
+
         vnum                            = fread_number( fp );
         if ( vnum == 0 )
             break;
- 
+
         fBootDb = FALSE;
         if ( get_obj_index( vnum ) != NULL )
         {
@@ -372,7 +422,7 @@ void load_objects( FILE *fp )
             exit( 1 );
         }
         fBootDb = TRUE;
- 
+
         pObjIndex                       = (OBJ_INDEX_DATA *)alloc_perm( sizeof(*pObjIndex) );
         pObjIndex->vnum                 = vnum;
         pObjIndex->new_format           = TRUE;
@@ -382,7 +432,7 @@ void load_objects( FILE *fp )
         pObjIndex->short_descr          = fread_string( fp );
         pObjIndex->description          = fread_string( fp );
         pObjIndex->material		= fread_string( fp );
- 
+
         pObjIndex->item_type            = item_lookup(fread_word( fp ));
         pObjIndex->extra_flags          = fread_flag( fp );
         pObjIndex->wear_flags           = fread_flag( fp );
@@ -437,7 +487,7 @@ void load_objects( FILE *fp )
 	}
 	pObjIndex->level		= fread_number( fp );
         pObjIndex->weight               = fread_number( fp );
-        pObjIndex->cost                 = fread_number( fp ); 
+        pObjIndex->cost                 = fread_number( fp );
 
         /* condition */
         letter 				= fread_letter( fp );
@@ -452,19 +502,19 @@ void load_objects( FILE *fp )
 	    case ('R') :		pObjIndex->condition =   0; break;
 	    default:			pObjIndex->condition = 100; break;
 	}
- 
+
         for ( ; ; )
         {
             char letter;
- 
+
             letter = fread_letter( fp );
- 
+
             if ( letter == 'A' )
             {
                 AFFECT_DATA *paf;
- 
+
                 paf                     = (AFFECT_DATA *)alloc_perm( sizeof(*paf) );
-		paf->where		= TO_OBJECT;
+                paf->where              = TO_OBJECT;
                 paf->type               = -1;
                 paf->level              = pObjIndex->level;
                 paf->duration           = -1;
@@ -474,12 +524,16 @@ void load_objects( FILE *fp )
                 paf->next               = pObjIndex->affected;
                 pObjIndex->affected     = paf;
                 top_affect++;
+                if (db_run == 1)
+                {
+                mysql_write_object_affect_data( paf, pObjIndex->vnum );
+              }
             }
 
 	    else if (letter == 'F')
             {
                 AFFECT_DATA *paf;
- 
+
                 paf                     = (AFFECT_DATA *)alloc_perm( sizeof(*paf) );
 		letter 			= fread_letter(fp);
 		switch (letter)
@@ -509,33 +563,44 @@ void load_objects( FILE *fp )
                 paf->next               = pObjIndex->affected;
                 pObjIndex->affected     = paf;
                 top_affect++;
+                if (db_run == 1)
+                {
+                mysql_write_object_affect_data( paf, pObjIndex->vnum );
+              }
             }
- 
+
             else if ( letter == 'E' )
             {
                 EXTRA_DESCR_DATA *ed;
- 
+
                 ed                      = (EXTRA_DESCR_DATA *)alloc_perm( sizeof(*ed) );
                 ed->keyword             = fread_string( fp );
                 ed->description         = fread_string( fp );
                 ed->next                = pObjIndex->extra_descr;
                 pObjIndex->extra_descr  = ed;
                 top_ed++;
+                if (db_run == 1)
+                {
+                mysql_write_object_extra_description( ed, pObjIndex->vnum );
+              }
             }
- 
+
             else
             {
                 ungetc( letter, fp );
                 break;
             }
         }
- 
+
         iHash                   = vnum % MAX_KEY_HASH;
         pObjIndex->next         = obj_index_hash[iHash];
         obj_index_hash[iHash]   = pObjIndex;
         top_obj_index++;
+        if (db_run == 1)
+        {
+        mysql_write_object( pObjIndex , area_last );
+      }
     }
- 
+
     return;
 }
-

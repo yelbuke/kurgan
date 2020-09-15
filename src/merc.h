@@ -25,6 +25,8 @@
 *	ROM license, in the file Rom24/doc/rom.license			   *
 ***************************************************************************/
 
+#include <mysql/mysql.h>
+#include "ini.h"
 
 /*
  * Accommodate old non-Ansi compilers.
@@ -114,8 +116,6 @@ typedef void SPELL_FUN	args( ( int sn, int level, CHAR_DATA *ch, void *vo,
 #define MAX_STRING_LENGTH	 4608
 #define MAX_INPUT_LENGTH	  256
 #define PAGELEN			   22
-
-
 
 /*
  * Game parameters.
@@ -1632,6 +1632,7 @@ struct	area_data
     RESET_DATA *	reset_last;
     char *		file_name;
     char *		name;
+		char *		writer;
     char *		credits;
     sh_int		age;
     sh_int		nplayer;
@@ -1926,6 +1927,8 @@ extern		char			log_buf		[];
 extern		TIME_INFO_DATA		time_info;
 extern		WEATHER_DATA		weather_info;
 
+extern		ini_t * config;
+
 /*
  * OS-dependent declarations.
  * These are all very standard library functions,
@@ -2114,6 +2117,9 @@ void	act		args( ( const char *format, CHAR_DATA *ch,
 void	act_new		args( ( const char *format, CHAR_DATA *ch,
 			    const void *arg1, const void *arg2, int type,
 			    int min_pos) );
+void	printf_to_char	args( ( CHAR_DATA *, const char *, ... ) );
+void	bugf		args( ( const char *, ... ) );
+void	logf		args( ( const char *, ... ) );
 
 /* db.c */
 char *	print_flags	args( ( int flag ));
@@ -2159,6 +2165,45 @@ void	append_file	args( ( CHAR_DATA *ch, const char *file, char *str ) );
 void	bug		args( ( const char *str, int param ) );
 void	log_string	args( ( const char *str ) );
 void	tail_chain	args( ( void ) );
+void mysql_log_communication	args( ( char *channel , CHAR_DATA *ch, CHAR_DATA *victim , int room_vnum , char *data ) );
+void mysql_write_area args(( AREA_DATA *pArea ));
+void mysql_write_room args(( ROOM_INDEX_DATA *pRoomIndex ));
+void mysql_write_exit args(( EXIT_DATA *pexit, int room_vnum, int door ));
+void mysql_write_room_extra_description args(( EXTRA_DESCR_DATA *ed, int room_vnum ));
+void mysql_write_object_extra_description args(( EXTRA_DESCR_DATA *ed, int object_vnum ));
+void mysql_write_help args(( HELP_DATA *pHelp ));
+void mysql_write_social args(( char *name, char *char_no_arg, char *others_no_arg, char *char_found, char *others_found, char *vict_found, char *char_not_found, char *char_auto, char *others_auto ));
+void mysql_write_shop args(( SHOP_DATA *pShop ));
+void mysql_write_reset args(( RESET_DATA *pReset ));
+void mysql_write_mobile args(( MOB_INDEX_DATA *pMobIndex, AREA_DATA *pArea ));
+void mysql_write_object_affect_data args(( AFFECT_DATA *paf, int object_vnum ));
+void mysql_write_object args(( OBJ_INDEX_DATA *pObjIndex, AREA_DATA *pArea ));
+void mysql_write_mobile_special args(( MOB_INDEX_DATA *pMobIndex, char *name ));
+void mysql_read_area args(( void ));
+void mysql_load_area args((MYSQL_ROW row));
+void mysql_read_help args(( void ));
+void mysql_load_help args((MYSQL_ROW row));
+void mysql_read_social args(( void ));
+void mysql_load_social args((MYSQL_ROW row));
+void mysql_read_room args(( void ));
+void mysql_load_room args((MYSQL_ROW row));
+void mysql_read_room_exit args(( void ));
+void mysql_load_room_exit args((MYSQL_ROW row));
+void mysql_read_room_extra_description args(( void ));
+void mysql_load_room_extra_description args((MYSQL_ROW row));
+void mysql_read_mobile args(( void ));
+void mysql_load_mobile args((MYSQL_ROW row));
+void mysql_read_object args(( void ));
+void mysql_load_object args((MYSQL_ROW row));
+void mysql_read_object_extra_description args(( void ));
+void mysql_load_object_extra_description args((MYSQL_ROW row));
+void mysql_read_object_affect_data args(( void ));
+void mysql_load_object_affect_data args((MYSQL_ROW row));
+void mysql_read_reset args(( void ));
+void mysql_load_reset args((MYSQL_ROW row));
+void mysql_read_shop args(( void ));
+void mysql_load_shop args((MYSQL_ROW row));
+AREA_DATA* area_lookup args(( char *name ));
 
 /* effect.c */
 void	acid_effect	args( (void *vo, int level, int dam, int target) );
@@ -2270,6 +2315,28 @@ char *	weapon_bit_name	args( ( int weapon_flags ) );
 char *  comm_bit_name	args( ( int comm_flags ) );
 char *	cont_bit_name	args( ( int cont_flags) );
 
+/* ini.c */
+/**
+ * Copyright (c) 2016 rxi
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the MIT license. See `ini.c` for details.
+ */
+
+#ifndef INI_H
+#define INI_H
+
+#define INI_VERSION "0.1.1"
+
+typedef struct ini_t ini_t;
+
+ini_t*      ini_load(const char *filename);
+void        ini_free(ini_t *ini);
+const char* ini_get(ini_t *ini, const char *section, const char *key);
+int         ini_sget(ini_t *ini, const char *section, const char *key, const char *scanfmt, void *dst);
+
+#endif
+
 
 /* interp.c */
 void	interpret	args( ( CHAR_DATA *ch, char *argument ) );
@@ -2286,6 +2353,7 @@ int	slot_lookup	args( ( int slot ) );
 bool	saves_spell	args( ( int level, CHAR_DATA *victim, int dam_type ) );
 void	obj_cast_spell	args( ( int sn, int level, CHAR_DATA *ch,
 				    CHAR_DATA *victim, OBJ_DATA *obj ) );
+
 /* save.c */
 void	save_char_obj	args( ( CHAR_DATA *ch ) );
 bool	load_char_obj	args( ( DESCRIPTOR_DATA *d, char *name ) );

@@ -14,7 +14,7 @@
  *  benefitting.  We hope that you share your changes too.  What goes	   *
  *  around, comes around.						   *
  ***************************************************************************/
- 
+
 /***************************************************************************
 *	ROM 2.4 is copyright 1993-1998 Russ Taylor			   *
 *	ROM has been brought to you by the ROM consortium		   *
@@ -25,6 +25,8 @@
 *	ROM license, in the file Rom24/doc/rom.license			   *
 ***************************************************************************/
 
+#include <mysql/mysql.h>
+
 /* vals from db.c */
 extern bool fBootDb;
 extern int		newmobs;
@@ -34,8 +36,17 @@ extern OBJ_INDEX_DATA 	* obj_index_hash          [MAX_KEY_HASH];
 extern int		top_mob_index;
 extern int		top_obj_index;
 extern int  		top_affect;
-extern int		top_ed; 
+extern int		top_ed;
+extern int		top_area;
+extern int		top_room;
 extern AREA_DATA 	* area_first;
+extern AREA_DATA 	* area_last;
+extern ROOM_INDEX_DATA *	room_index_hash		[MAX_KEY_HASH];
+extern int    db_run;
+extern char * db_server;
+extern char * db_name;
+extern char * db_user;
+extern char * db_password;
 
 
 /* from db2.c */
@@ -44,6 +55,8 @@ extern int	social_count;
 /* conversion from db.h */
 void	convert_mob(MOB_INDEX_DATA *mob);
 void	convert_obj(OBJ_INDEX_DATA *obj);
+
+MYSQL *DB_CONNECT();
 
 /* macro for flag swapping */
 #define GET_UNSET(flag1,flag2)	(~(flag1)&((flag1)|(flag2)))

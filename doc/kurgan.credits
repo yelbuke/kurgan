@@ -1,0 +1,27 @@
+Kurgan Mud is a derivative of Rom2.4b6, which is based on Diku and Merc Muds.
+
+Please see rom.credits for a list of past credits.
+
+Kurgan Mud has few changes that make it different from its ancestors.
+
+1- The code is compatible with g++ (GCC) 4.8.5.
+
+Compile errors and warning were resolved by Jai.
+
+2- All data in *.are files are stored in a MySQL/MariaDB database. When
+the game boots, data in database is read and is kept in memory scructures,
+as with the same logic of old *.are files. While the game is running,
+Kurgan Mud does not query the database for objects, rooms and mobiles.
+At least for now.
+
+Database infrastructure is written by Jai.
+
+3- Certain values are kept in a file named kurgan.ini in the main directory.
+This file is parsed with functions in ini.c.
+
+This library was created and is maintained by Rxi. You can find the details
+from: https://github.com/rxi/ini
+
+4- printf_to_char(), bugf() and logf()
+
+Written by EOD, by John Booth <???>

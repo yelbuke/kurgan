@@ -56,6 +56,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdarg.h>
 #include <unistd.h>
 
 #include "merc.h"
@@ -421,6 +422,9 @@ int main( int argc, char **argv )
     game_loop_unix( control );
     close (control);
 #endif
+
+		/* free config */
+		ini_free(config);
 
     /*
      * That's all, folks.
@@ -2571,3 +2575,38 @@ int gettimeofday( struct timeval *tp, void *tzp )
     tp->tv_usec = 0;
 }
 #endif
+
+/* source: EOD, by John Booth <???> */
+
+void printf_to_char (CHAR_DATA *ch, const char *fmt, ...)
+{
+	char buf [MAX_STRING_LENGTH];
+	va_list args;
+	va_start (args, (char*)fmt);
+	vsprintf (buf, fmt, args);
+	va_end (args);
+
+	send_to_char (buf, ch);
+}
+
+void bugf (const char * fmt, ...)
+{
+	char buf [2*MAX_STRING_LENGTH];
+	va_list args;
+	va_start (args, (char*)fmt);
+	vsprintf (buf, fmt, args);
+	va_end (args);
+
+	bug (buf,0);
+}
+
+void logf (const char *fmt, ...)
+{
+	char buf [2*MAX_STRING_LENGTH];
+	va_list args;
+	va_start (args, (char*)fmt);
+	vsprintf (buf, fmt, args);
+	va_end (args);
+
+	log_string (buf);
+}
