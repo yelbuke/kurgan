@@ -1,6 +1,4 @@
-# kurgan
-
-Kurgan Mud
+# Kurgan Mud
 
 Kurgan Mud is a derivative of ROM2.4b6 with MySQL integration.
 
