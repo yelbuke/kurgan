@@ -213,7 +213,7 @@ char			strArea[MAX_INPUT_LENGTH];
 /*
  * Local booting procedures.
 */
-void    init_mm         args( ( void ) );
+void  init_random_number_generator  args( ( void ) );
 void	load_area	args( ( FILE *fp ) );
 void	load_helps	args( ( FILE *fp ) );
 void	load_old_mob	args( ( FILE *fp ) );
@@ -255,7 +255,7 @@ void boot_db( void )
      * Init random number generator.
      */
     {
-        init_mm( );
+        init_random_number_generator( );
     }
 
 /*
@@ -3135,7 +3135,7 @@ void do_dump( CHAR_DATA *ch, char *argument )
  */
 int number_fuzzy( int number )
 {
-    switch ( number_bits( 2 ) )
+    switch ( number_range(0,3) )
     {
     case 0:  number -= 1; break;
     case 3:  number += 1; break;
@@ -3147,131 +3147,53 @@ int number_fuzzy( int number )
 
 
 /*
- * Generate a random number.
+ * New number_range() function to solve modula problem.
  */
-int number_range( int from, int to )
-{
-    int power;
-    int number;
+ int number_range( int from, int to )
+ {
+   int x;
+   int fark;
 
-    if (from == 0 && to == 0)
-	return 0;
+   fark = to - from;
 
-    if ( ( to = to - from + 1 ) <= 1 )
-	return from;
+   if( fark == 0 )
+   {
+     return from;
+   }
 
-    for ( power = 2; power < to; power <<= 1 )
-	;
+   do {
+     x = random();
+   } while (x >= (RAND_MAX - (RAND_MAX % (fark+1))));
 
-    while ( ( number = number_mm() & (power -1 ) ) >= to )
-	;
+   x %= (fark+1);
 
-    return from + number;
-}
+   return x + from;
+ }
 
 
 
 /*
  * Generate a percentile roll.
  */
-int number_percent( void )
-{
-    int percent;
-
-    while ( (percent = number_mm() & (128-1) ) > 99 )
-	;
-
-    return 1 + percent;
-}
+ int number_percent( void )
+ {
+     return number_range(1,100);
+ }
 
 
 
 /*
  * Generate a random door.
  */
-int number_door( void )
+ int number_door( void )
+ {
+     return number_range(0,5);
+ }
+
+void init_random_number_generator( )
 {
-    int door;
-
-    while ( ( door = number_mm() & (8-1) ) > 5)
-	;
-
-    return door;
-}
-
-int number_bits( int width )
-{
-    return number_mm( ) & ( ( 1 << width ) - 1 );
-}
-
-
-
-
-/*
- * I've gotten too many bad reports on OS-supplied random number generators.
- * This is the Mitchell-Moore algorithm from Knuth Volume II.
- * Best to leave the constants alone unless you've read Knuth.
- * -- Furey
- */
-
-/* I noticed streaking with this random number generator, so I switched
-   back to the system srandom call.  If this doesn't work for you,
-   define OLD_RAND to use the old system -- Alander */
-
-#if defined (OLD_RAND)
-static  int     rgiState[2+55];
-#endif
-
-void init_mm( )
-{
-#if defined (OLD_RAND)
-    int *piState;
-    int iState;
-
-    piState     = &rgiState[2];
-
-    piState[-2] = 55 - 55;
-    piState[-1] = 55 - 24;
-
-    piState[0]  = ((int) current_time) & ((1 << 30) - 1);
-    piState[1]  = 1;
-    for ( iState = 2; iState < 55; iState++ )
-    {
-        piState[iState] = (piState[iState-1] + piState[iState-2])
-                        & ((1 << 30) - 1);
-    }
-#else
-    srandom(time(NULL)^getpid());
-#endif
-    return;
-}
-
-
-
-long number_mm( void )
-{
-#if defined (OLD_RAND)
-    int *piState;
-    int iState1;
-    int iState2;
-    int iRand;
-
-    piState             = &rgiState[2];
-    iState1             = piState[-2];
-    iState2             = piState[-1];
-    iRand               = (piState[iState1] + piState[iState2])
-                        & ((1 << 30) - 1);
-    piState[iState1]    = iRand;
-    if ( ++iState1 == 55 )
-        iState1 = 0;
-    if ( ++iState2 == 55 )
-        iState2 = 0;
-    piState[-2]         = iState1;
-    piState[-1]         = iState2;
-    return iRand >> 6;
-#else
-    return random() >> 6;
-#endif
+  srandom(time(NULL)^getpid());
+  return;
 }
 
 

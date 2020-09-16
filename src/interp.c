@@ -92,7 +92,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "kill",		do_kill,	POS_FIGHTING,	 0,  LOG_NORMAL, 1 },
     { "look",		do_look,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "clan",		do_clantalk,	POS_SLEEPING,	 0,  LOG_NORMAL, 1 },
-    { "music",          do_music,   	POS_SLEEPING,    0,  LOG_NORMAL, 1 }, 
+    { "music",          do_music,   	POS_SLEEPING,    0,  LOG_NORMAL, 1 },
     { "order",		do_order,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "practice",       do_practice,	POS_SLEEPING,    0,  LOG_NORMAL, 1 },
     { "rest",		do_rest,	POS_SLEEPING,	 0,  LOG_NORMAL, 1 },
@@ -211,7 +211,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "envenom",	do_envenom,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "fill",		do_fill,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "give",		do_give,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
-    { "heal",		do_heal,	POS_RESTING,	 0,  LOG_NORMAL, 1 }, 
+    { "heal",		do_heal,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "hold",		do_wear,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "list",		do_list,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "lock",		do_lock,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
@@ -226,7 +226,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "take",		do_get,		POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "sacrifice",	do_sacrifice,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "junk",           do_sacrifice,   POS_RESTING,     0,  LOG_NORMAL, 0 },
-    { "tap",      	do_sacrifice,   POS_RESTING,     0,  LOG_NORMAL, 0 },   
+    { "tap",      	do_sacrifice,   POS_RESTING,     0,  LOG_NORMAL, 0 },
 /*  { "unlock",		do_unlock,	POS_RESTING,	 0,  LOG_NORMAL, 1 }, */
     { "value",		do_value,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { "wear",		do_wear,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
@@ -308,13 +308,13 @@ const	struct	cmd_type	cmd_table	[] =
     { "noemote",	do_noemote,	POS_DEAD,	L5,  LOG_ALWAYS, 1 },
     { "noshout",	do_noshout,	POS_DEAD,	L5,  LOG_ALWAYS, 1 },
     { "notell",		do_notell,	POS_DEAD,	L5,  LOG_ALWAYS, 1 },
-    { "pecho",		do_pecho,	POS_DEAD,	L4,  LOG_ALWAYS, 1 }, 
+    { "pecho",		do_pecho,	POS_DEAD,	L4,  LOG_ALWAYS, 1 },
     { "pardon",		do_pardon,	POS_DEAD,	L3,  LOG_ALWAYS, 1 },
     { "purge",		do_purge,	POS_DEAD,	L4,  LOG_ALWAYS, 1 },
     { "restore",	do_restore,	POS_DEAD,	L4,  LOG_ALWAYS, 1 },
     { "sla",		do_sla,		POS_DEAD,	L3,  LOG_NORMAL, 0 },
     { "slay",		do_slay,	POS_DEAD,	L3,  LOG_ALWAYS, 1 },
-    { "teleport",	do_transfer,    POS_DEAD,	L5,  LOG_ALWAYS, 1 },	
+    { "teleport",	do_transfer,    POS_DEAD,	L5,  LOG_ALWAYS, 1 },
     { "transfer",	do_transfer,	POS_DEAD,	L5,  LOG_ALWAYS, 1 },
 
 /*  { "at",		do_at,		POS_DEAD,	L6,  LOG_NORMAL, 1 }, */
@@ -514,17 +514,17 @@ void interpret( CHAR_DATA *ch, char *argument )
 void do_function (CHAR_DATA *ch, DO_FUN *do_fun, char *argument)
 {
     char *command_string;
-    
+
     /* copy the string */
     command_string = str_dup(argument);
-    
+
     /* dispatch the command */
     (*do_fun) (ch, command_string);
-    
+
     /* free the string */
     free_string(command_string);
 }
-    
+
 bool check_social( CHAR_DATA *ch, char *command, char *argument )
 {
     char arg[MAX_INPUT_LENGTH];
@@ -603,10 +603,10 @@ bool check_social( CHAR_DATA *ch, char *command, char *argument )
 
 	if ( !IS_NPC(ch) && IS_NPC(victim)
 	&&   !IS_AFFECTED(victim, AFF_CHARM)
-	&&   IS_AWAKE(victim) 
+	&&   IS_AWAKE(victim)
 	&&   victim->desc == NULL)
 	{
-	    switch ( number_bits( 4 ) )
+	    switch ( number_range(0,15) )
 	    {
 	    case 0:
 
@@ -639,19 +639,19 @@ bool check_social( CHAR_DATA *ch, char *command, char *argument )
  */
 bool is_number ( char *arg )
 {
- 
+
     if ( *arg == '\0' )
         return FALSE;
- 
+
     if ( *arg == '+' || *arg == '-' )
         arg++;
- 
+
     for ( ; *arg != '\0'; arg++ )
     {
         if ( !isdigit( *arg ) )
             return FALSE;
     }
- 
+
     return TRUE;
 }
 
@@ -664,7 +664,7 @@ int number_argument( char *argument, char *arg )
 {
     char *pdot;
     int number;
-    
+
     for ( pdot = argument; *pdot != '\0'; pdot++ )
     {
 	if ( *pdot == '.' )
@@ -681,7 +681,7 @@ int number_argument( char *argument, char *arg )
     return 1;
 }
 
-/* 
+/*
  * Given a string like 14*foo, return 14 and 'foo'
 */
 int mult_argument(char *argument, char *arg)
@@ -700,7 +700,7 @@ int mult_argument(char *argument, char *arg)
             return number;
         }
     }
- 
+
     strcpy( arg, argument );
     return 1;
 }
@@ -749,12 +749,12 @@ void do_commands( CHAR_DATA *ch, char *argument )
     char buf[MAX_STRING_LENGTH];
     int cmd;
     int col;
- 
+
     col = 0;
     for ( cmd = 0; cmd_table[cmd].name[0] != '\0'; cmd++ )
     {
         if ( cmd_table[cmd].level <  LEVEL_HERO
-        &&   cmd_table[cmd].level <= get_trust( ch ) 
+        &&   cmd_table[cmd].level <= get_trust( ch )
 	&&   cmd_table[cmd].show)
 	{
 	    sprintf( buf, "%-12s", cmd_table[cmd].name );
@@ -763,7 +763,7 @@ void do_commands( CHAR_DATA *ch, char *argument )
 		send_to_char( "\n\r", ch );
 	}
     }
- 
+
     if ( col % 6 != 0 )
 	send_to_char( "\n\r", ch );
     return;
@@ -774,12 +774,12 @@ void do_wizhelp( CHAR_DATA *ch, char *argument )
     char buf[MAX_STRING_LENGTH];
     int cmd;
     int col;
- 
+
     col = 0;
     for ( cmd = 0; cmd_table[cmd].name[0] != '\0'; cmd++ )
     {
         if ( cmd_table[cmd].level >= LEVEL_HERO
-        &&   cmd_table[cmd].level <= get_trust( ch ) 
+        &&   cmd_table[cmd].level <= get_trust( ch )
         &&   cmd_table[cmd].show)
 	{
 	    sprintf( buf, "%-12s", cmd_table[cmd].name );
@@ -788,9 +788,8 @@ void do_wizhelp( CHAR_DATA *ch, char *argument )
 		send_to_char( "\n\r", ch );
 	}
     }
- 
+
     if ( col % 6 != 0 )
 	send_to_char( "\n\r", ch );
     return;
 }
-
