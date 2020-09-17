@@ -27,6 +27,7 @@
 #include "protocol.h"
 #include <mysql/mysql.h>
 #include "ini.h"
+#include "color.h"
 
 /*
  * Accommodate old non-Ansi compilers.
