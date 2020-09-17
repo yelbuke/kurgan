@@ -576,6 +576,10 @@ void game_loop_mac_msdos( void )
 	    if ( d->incomm[0] != '\0' )
 	    {
 		d->fcommand	= TRUE;
+
+		if ( d->pProtocol != NULL )
+        d->pProtocol->WriteOOB = 0;
+
 		stop_idling( d->character );
 
 		if ( d->connected == CON_PLAYING )
@@ -765,6 +769,10 @@ void game_loop_unix( int control )
 	    if ( d->incomm[0] != '\0' )
 	    {
 		d->fcommand	= TRUE;
+
+		if ( d->pProtocol != NULL )
+        d->pProtocol->WriteOOB = 0;
+
 		stop_idling( d->character );
 
 		if (d->showstr_point)
@@ -898,6 +906,7 @@ void init_descriptor( int control )
     dnew->showstr_point = NULL;
     dnew->outsize	= 2000;
     dnew->outbuf	= (char *)alloc_mem( dnew->outsize );
+		dnew->pProtocol     = ProtocolCreate();
 
     size = sizeof(sock);
     if ( getpeername( desc, (struct sockaddr *) &sock, &size ) < 0 )
@@ -946,6 +955,8 @@ void init_descriptor( int control )
      */
     dnew->next			= descriptor_list;
     descriptor_list		= dnew;
+
+		ProtocolNegotiate(dnew);
 
     /*
      * Send the greeting.
@@ -1024,6 +1035,8 @@ void close_socket( DESCRIPTOR_DATA *dclose )
 	    bug( "Close_socket: dclose not found.", 0 );
     }
 
+		ProtocolDestroy( dclose->pProtocol );
+
     close( dclose->descriptor );
     free_descriptor(dclose);
 #if defined(MSDOS) || defined(macintosh)
@@ -1038,13 +1051,16 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
 {
     size_t iStart;
 
+		static char read_buf[MAX_PROTOCOL_BUFFER];
+    read_buf[0] = '\0';
+
     /* Hold horses if pending command already. */
     if ( d->incomm[0] != '\0' )
 	return TRUE;
 
     /* Check for overflow. */
-    iStart = strlen(d->inbuf);
-    if ( iStart >= sizeof(d->inbuf) - 10 )
+		iStart = 0;
+    if ( strlen(d->inbuf) >= sizeof(d->inbuf) - 10 )
     {
 	sprintf( log_buf, "%s input overflow!", d->host );
 	log_string( log_buf );
@@ -1064,7 +1080,7 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
 	putc( c, stdout );
 	if ( c == '\r' )
 	    putc( '\n', stdout );
-	d->inbuf[iStart++] = c;
+	read_buf[iStart++] = c;
 	if ( iStart > sizeof(d->inbuf) - 10 )
 	    break;
     }
@@ -1075,12 +1091,12 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
     {
 	int nRead;
 
-	nRead = read( (int)d->descriptor, (void *)(d->inbuf + iStart),
-	    sizeof(d->inbuf) - 10 - iStart );
+	nRead = read( (int)d->descriptor, (void *)(read_buf + iStart),sizeof(read_buf) - 10 - iStart );
+
 	if ( nRead > 0 )
 	{
 	    iStart += nRead;
-	    if ( d->inbuf[iStart-1] == '\n' || d->inbuf[iStart-1] == '\r' )
+	    if ( read_buf[iStart-1] == '\n' || read_buf[iStart-1] == '\r' )
 		break;
 	}
 	else if ( nRead == 0 )
@@ -1098,8 +1114,9 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
     }
 #endif
 
-    d->inbuf[iStart] = '\0';
-    return TRUE;
+read_buf[iStart] = '\0';
+ProtocolInput( d, read_buf, iStart, d->inbuf );
+return TRUE;
 }
 
 
@@ -1226,7 +1243,9 @@ bool process_output( DESCRIPTOR_DATA *d, bool fPrompt )
     /*
      * Bust a prompt.
      */
-    if (!merc_down && d->showstr_point)
+		 if ( d->pProtocol->WriteOOB )
+         ; /* The last sent data was OOB, so do NOT draw the prompt */
+     else if (!merc_down && d->showstr_point)
 	write_to_buffer(d,"[Hit Return to continue]\n\r",0);
     else if (fPrompt && !merc_down && d->connected == CON_PLAYING)
     {
@@ -1278,6 +1297,9 @@ bool process_output( DESCRIPTOR_DATA *d, bool fPrompt )
 
         if ( IS_SET(ch->comm, COMM_PROMPT) )
             bust_a_prompt( d->character );
+
+		if ( !d->pProtocol->bSGA )
+			write_to_buffer( d, GoAheadStr, 0 );
 
 	if (IS_SET(ch->comm,COMM_TELNET_GA))
 	    write_to_buffer(d,go_ahead_str,0);
@@ -1464,6 +1486,9 @@ void bust_a_prompt( CHAR_DATA *ch )
  */
 void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
 {
+	txt = ProtocolOutput( d, txt, &length );
+	if ( d->pProtocol->WriteOOB > 0 )
+			--d->pProtocol->WriteOOB;
     /*
      * Find length in case caller didn't.
      */
@@ -1473,7 +1498,7 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     /*
      * Initial \n\r if needed.
      */
-    if ( d->outtop == 0 && !d->fcommand )
+    if ( d->outtop == 0 && !d->fcommand && !d->pProtocol->WriteOOB )
     {
 	d->outbuf[0]	= '\n';
 	d->outbuf[1]	= '\r';
@@ -1620,7 +1645,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	{
 	    /* Old player */
 	    write_to_buffer( d, "Password: ", 0 );
-	    write_to_buffer( d, echo_off_str, 0 );
+	    ProtocolNoEcho( d, true );
 	    d->connected = CON_GET_OLD_PASSWORD;
 	    return;
 	}
@@ -1661,7 +1686,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	    return;
 	}
 
-	write_to_buffer( d, echo_on_str, 0 );
+	ProtocolNoEcho( d, false );
 
 	if (check_playing(d,ch->name))
 	    return;
@@ -1734,8 +1759,9 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	switch ( *argument )
 	{
 	case 'y': case 'Y':
-	    sprintf( buf, "New character.\n\rGive me a password for %s: %s",
-		ch->name, echo_off_str );
+	ProtocolNoEcho( d, true );
+	sprintf( buf, "New character.\n\rGive me a password for %s: ",
+			ch->name );
 	    write_to_buffer( d, buf, 0 );
 	    d->connected = CON_GET_NEW_PASSWORD;
 	    break;
@@ -1797,7 +1823,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	    return;
 	}
 
-	write_to_buffer( d, echo_on_str, 0 );
+	ProtocolNoEcho( d, false );
 	write_to_buffer(d,"The following races are available:\n\r  ",0);
 	for ( race = 1; race_table[race].name != NULL; race++ )
 	{
@@ -2120,6 +2146,7 @@ case CON_DEFAULT_CHOICE:
 	}
 
 	act( "$n has entered the game.", ch, NULL, NULL, TO_ROOM );
+	MXPSendTag( d, "<VERSION>" );
 	do_function(ch, &do_look, (char*)"auto" );
 
 	wiznet((char*)"$N has left real life behind.",ch,NULL,
@@ -2279,6 +2306,7 @@ bool check_reconnect( DESCRIPTOR_DATA *d, char *name, bool fConn )
 		wiznet((char*)"$N groks the fullness of $S link.",
 		    ch,NULL,WIZ_LINKS,0,0);
 		d->connected = CON_PLAYING;
+		MXPSendTag( d, "<VERSION>" );
 	    }
 	    return TRUE;
 	}
